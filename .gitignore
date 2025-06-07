@@ -1,0 +1,17 @@
+# Course materials (don't track these)
+fall-2024/
+CourseRepo/
+CourseLectures
+CourseProblemSets
+
+# Julia files that shouldn't be tracked
+Manifest.toml
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+
+# System files
+.DS_Store
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
