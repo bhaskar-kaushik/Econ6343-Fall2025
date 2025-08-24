@@ -15,3 +15,8 @@ Manifest.toml
 
 # Jupyter notebooks checkpoints
 .ipynb_checkpoints/
+.DS_Store
+*.jld
+*.csv
+*.dat
+Manifest.toml
