@@ -1,37 +1,13 @@
-# or
-open -e README.md# Econ 6343: Econometrics III - My Work
+# Econ 6343: Econometrics III — My Work (Fall 2025)
 
-This repository contains my solutions and notes for Econ 6343 at the University of Oklahoma.
+This repository contains my personal solutions and notes for OU Econ 6343 (Fall 2025).  
+**Do not distribute.**
 
-## Course Information
-- **Course:** Econ 6343: Econometrics III
-- **Instructor:** Tyler Ransom
-- **Semester:** Fall 2024
+## Structure
+- `MyWork/ProblemSets/` – problem set solutions
+- `MyWork/Notes/` – course notes
+- `MyWork/Project/` – final project materials
+- `MyWork/Scripts/` – practice scripts
 
-## Directory Structure
-- `MyWork/ProblemSets/` - Problem set solutions
-- `MyWork/Notes/` - Course notes
-- `MyWork/Project/` - Final research proposal
-- `MyWork/Scripts/` - Practice scripts
-- `fall-2024/` - Course materials (not tracked in git)
-
-My coursework for Econometrics III (Econ 6343) at OU, Fall 2025<<<<<<< HEAD
-# Econ 6343: Econometrics III - My Work
-
-This repository contains my solutions and notes for Econ 6343 at the University of Oklahoma.
-
-## Course Information
-- **Course:** Econ 6343: Econometrics III
-- **Instructor:** Tyler Ransom
-- **Semester:** Fall 2024
-
-## Directory Structure
-- `MyWork/ProblemSets/` - Problem set solutions
-- `MyWork/Notes/` - Course notes
-- `MyWork/Project/` - Final research proposal
-- `MyWork/Scripts/` - Practice scripts
-- `fall-2024/` - Course materials (not tracked in git)
-=======
-# Econ6343-Fall2025
-My coursework for Econometrics III (Econ 6343) at OU, Fall 2025
->>>>>>> 1d1b7a28db8a934743fd09633d4f2c432c19b57a
+Course materials are read-only in a separate local clone:
+`~/Documents/Econ6343/course-fall-2025` (OU-PhD-Econometrics/fall-2025).
