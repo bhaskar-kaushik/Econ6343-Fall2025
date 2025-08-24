@@ -9,13 +9,13 @@ using Distributions
 using JLD
 using Test
 # --- name helpers ---
-hascol(df::AbstractDataFrame, s::Symbol) = s in names(df)
+hascol(df::AbstractDataFrame, s::Symbol) = String(s) in names(df)
 
 # Case-insensitive, punctuation-insensitive name resolver
 normalize_key(s::AbstractString) = replace(lowercase(s), r"[^a-z0-9]+" => "_")
 function find_col(df::AbstractDataFrame, target::AbstractString)
     key = normalize_key(target)
-    table = Dict(normalize_key(String(n)) => n for n in names(df))
+    table = Dict(normalize_key(n) => Symbol(n) for n in names(df))
     get(table, key, nothing)  # returns the actual Symbol in df (or nothing)
 end
 
@@ -40,7 +40,6 @@ function q1()
     JLD.save("firstmatrix.jld","A",A,"B",B,"C",C,"D",D)
     CSV.write("Cmatrix.csv", DataFrame(C, :auto))
     CSV.write("Dmatrix.dat", DataFrame(D, :auto); delim='\t')
-    save_tsv("Dmatrix.dat", DataFrame(D, :auto))
     return A,B,C,D
 end
 
@@ -69,8 +68,10 @@ function q2(A::AbstractMatrix,B::AbstractMatrix,C::AbstractMatrix)
     N,K,T = 15169,6,5
     X = Array{Float64,3}(undef,N,K,T)
     X[:,1,:] .= 1.0
-    X[:,5,:] .= rand(Binomial(20,0.6), N)
-    X[:,6,:] .= rand(Binomial(20,0.5), N)
+    rand_bin5 = rand(Binomial(20,0.6), N)
+    rand_bin6 = rand(Binomial(20,0.5), N)
+    X[:,5,:] .= reshape(rand_bin5, N, 1)
+    X[:,6,:] .= reshape(rand_bin6, N, 1)
     for t in 1:T
         p = 0.75 * (6 - t) / 5
         X[:,2,t] = rand(N) .< p
@@ -115,21 +116,21 @@ function q3()
     occ = find_col(nlsw, "occupation")
     wag = find_col(nlsw, "wage")
 
-        # --- (b) Percent never married & percent college grads ---
-    pct_never = if hascol(nlsw, :never_married)
-        mean(skipmissing(nlsw.never_married) .== 1)
-    elseif hascol(nlsw, :married)
-        mean(skipmissing(nlsw.married) .== 0)
+    # --- (b) Percent never married & percent college grads ---
+    pct_never = if !isnothing(nm)
+        mean(skipmissing(nlsw[!, nm]) .== 1)
+    elseif !isnothing(mar)
+        mean(skipmissing(nlsw[!, mar]) .== 0)
     else
         @warn "Could not find never_married or married in: $(names(nlsw))"
         missing
     end
 
-    pct_coll = if hascol(nlsw, :collgrad)
-        mean(skipmissing(nlsw.collgrad) .== 1)
-    elseif hascol(nlsw, :grade)
+    pct_coll = if !isnothing(col)
+        mean(skipmissing(nlsw[!, col]) .== 1)
+    elseif !isnothing(grd)
         # treat grade >= 16 as “college grad”
-        mean(skipmissing(nlsw.grade) .>= 16)
+        mean(skipmissing(nlsw[!, grd]) .>= 16)
     else
         @warn "Could not find collgrad or grade in: $(names(nlsw))"
         missing
@@ -145,32 +146,31 @@ function q3()
 
 
     # (c) race proportions
-    @assert rac !== nothing "race column not found"
+    @assert !isnothing(rac) "race column not found"
     fr_race = freqtable(nlsw, rac)
     fr_race_prop = fr_race ./ sum(fr_race)
     println("race distribution (prop):\n", fr_race_prop)
 
     # (d) summary stats + missing grade
     summarystats = describe(nlsw, :mean, :median, :std, :min, :max, :nunique)
-    @assert grd !== nothing "grade column not found"
+    @assert !isnothing(grd) "grade column not found"
     nmiss_grade = sum(ismissing, nlsw[!, grd])
     println("missing grade obs = ", nmiss_grade)
-    CSV.write("nlsw88_summarystats.csv", summarystats)
+    CSV.write("nlsw88_summarystats.csv", summarystats; transform=(col, val) -> val === nothing ? missing : val)
 
     # (e) industry x occupation
-    @assert ind !== nothing "industry column not found"
-    @assert occ !== nothing "occupation column not found"
+    @assert !isnothing(ind) "industry column not found"
+    @assert !isnothing(occ) "occupation column not found"
     jt = freqtable(nlsw, ind, occ)
     println("industry x occupation:\n", jt)
 
     # (f) mean wage by (industry, occupation)
-    @assert wag !== nothing "wage column not found"
+    @assert !isnothing(wag) "wage column not found"
     df_w  = select(nlsw, ind, occ, wag)
-    names!(df_w, [:industry, :occupation, :wage])
-    df_grp = combine(groupby(df_w, [:industry, :occupation]), :wage => mean => :wage_mean)
+    df_grp = combine(groupby(df_w, [ind, occ]), wag => (x -> mean(skipmissing(x))) => :wage_mean)
     CSV.write("mean_wage_by_ind_occ.csv", df_grp)
 
-    CSV.write("nlsw88_processed.csv", nlsw)
+    CSV.write("nlsw88_processed.csv", nlsw; transform=(col, val) -> val === nothing ? missing : val)
     return nothing
 end
 
@@ -206,12 +206,16 @@ function q4()
 
     @assert isfile("nlsw88_processed.csv") "Run q3() first for ttl_exp/wage."
     nlsw = CSV.read("nlsw88_processed.csv", DataFrame)
-    @assert hascol(nlsw,:ttl_exp) "ttl_exp not found"; @assert hascol(nlsw,:wage) "wage not found"
+    texp = find_col(nlsw, "ttl_exp")
+    wage = find_col(nlsw, "wage")
+    @assert !isnothing(texp) "ttl_exp not found"
+    @assert !isnothing(wage) "wage not found"
 
-    v1 = collect(skipmissing(nlsw.ttl_exp))
-    v2 = collect(skipmissing(nlsw.wage))
-    n  = min(length(v1), length(v2))
-    V1, V2 = reshape(v1[1:n], n, 1), reshape(v2[1:n], n, 1)
+    mask = .!ismissing.(nlsw[!, texp]) .& .!ismissing.(nlsw[!, wage])
+    v1 = nlsw[!, texp][mask]
+    v2 = nlsw[!, wage][mask]
+    n  = length(v1)
+    V1, V2 = reshape(v1, n, 1), reshape(v2, n, 1)
     hVV, cpVV, sVV = matrixops(V1,V2)
     println("matrixops(ttl_exp,wage): sum = ", sVV, " ; hadamard size = ", size(hVV))
     return nothing
